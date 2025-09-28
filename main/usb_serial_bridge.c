@@ -13,6 +13,7 @@
 #include "sdkconfig.h"
 #include "esp_log.h"
 #include "esp_check.h"
+#include "esp_timer.h"
 
 #define BUF_SIZE (1024)
 #define TASK_STACK_SIZE (4096)
@@ -55,10 +56,20 @@ static void usb_serial_task(void *arg)
         return;
     }
 
+    int64_t last_tx_ms = 0;
     int len;
     while (1) {
         len = usb_serial_jtag_read_bytes(data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
-        if (len) uart_write_bytes(UART_NUM_0, (const char *) data, len);
+        if (len) {
+            int64_t curr_tx_ms = esp_timer_get_time();
+            if (len == 1 && curr_tx_ms - last_tx_ms > 1000000 && data[0] == 0x10) {
+                // Send a break if DLE (Data Link Escape) was sent after a pause of >1s
+                uart_write_bytes_with_break(UART_NUM_0, (const char *) data, len, 160);
+            } else{
+                uart_write_bytes(UART_NUM_0, (const char *) data, len);
+            }
+            last_tx_ms = curr_tx_ms;
+        }
 
         len = uart_read_bytes(UART_NUM_0, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
         if (len) usb_serial_jtag_write_bytes((const char *) data, len, 20 / portTICK_PERIOD_MS);
