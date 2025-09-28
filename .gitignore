@@ -30,3 +30,4 @@ docs/_static/DejaVuSans.ttf
 docs/_static/NotoSansSC-Regular.otf
 
 /.cache/
+/esp-idf/
