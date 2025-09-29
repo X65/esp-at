@@ -11,10 +11,14 @@
 #include "esp_at_init.h"
 
 void usb_serial_init(void);
+void at_led_init(void);
+void at_led_clear_all(void);
 
 void app_main(void)
 {
     esp_at_main_preprocess();
+
+    at_led_init();
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_at_netif_init());
@@ -23,4 +27,5 @@ void app_main(void)
     esp_at_init();
 
     usb_serial_init();
+    at_led_clear_all();
 }
